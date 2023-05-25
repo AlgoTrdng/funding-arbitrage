@@ -1,0 +1,29 @@
+{
+    "name": "mango-utils",
+    "version": "0.0.0",
+    "main": "dist/index.js",
+    "private": true,
+    "license": "MIT",
+    "type": "module",
+    "publishConfig": {
+        "access": "public"
+    },
+    "scripts": {
+        "build": "rm -rf dist && tsc"
+    },
+    "devDependencies": {
+        "@types/big.js": "^6.1.6",
+        "@types/bn.js": "^5.1.1",
+        "@types/node": "^18.15.13",
+        "tsconfig": "workspace:*",
+        "typescript": "^5.0.4"
+    },
+    "dependencies": {
+        "@pythnetwork/client": "^2.17.0",
+        "@solana/buffer-layout": "^4.0.1",
+        "@solana/buffer-layout-utils": "^0.2.0",
+        "@solana/web3.js": "^1.76.0",
+        "big.js": "^6.2.1",
+        "bn.js": "^5.2.1"
+    }
+}

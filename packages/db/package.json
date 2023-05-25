@@ -1,0 +1,22 @@
+{
+    "name": "db",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "main": "dist/index.js",
+    "scripts": {
+        "build": "rm -rf dist && tsc",
+        "db:push": "drizzle-kit push:mysql"
+    },
+    "devDependencies": {
+        "@planetscale/database": "^1.7.0",
+        "@types/node": "^18.15.13",
+        "dotenv": "^16.0.3",
+        "drizzle-kit": "^0.18.0",
+        "tsconfig": "workspace:*",
+        "typescript": "^5.0.4"
+    },
+    "dependencies": {
+        "drizzle-orm": "^0.26.1"
+    }
+}
