@@ -25,7 +25,9 @@ export class AccountFetcher<
 	// @ts-ignore
 	public accountsInfos: { [K in keyof M]: Buffer } = {}
 
-	constructor(accounts: M) {
+	private lastPollTs = 0
+
+	constructor(accounts: M, private pollingTimeout = 0) {
 		Object.entries(accounts).forEach(([key, { address, parser }]) => {
 			this.addresses.push(address)
 			this.parsers.push(parser)
@@ -36,6 +38,7 @@ export class AccountFetcher<
 	async fetch() {
 		try {
 			const ais = await connection.getMultipleAccountsInfo(this.addresses)
+			this.lastPollTs = new Date().getTime()
 
 			ais.forEach((ai, i) => {
 				if (!ai || !ai.data) {
@@ -56,7 +59,7 @@ export class AccountFetcher<
 		}
 	}
 
-	listen() {
+	listenWithWebsockets() {
 		const subIds: number[] = []
 
 		const refreshListeners = () => {
@@ -87,14 +90,34 @@ export class AccountFetcher<
 		}, REFRESH_TIMEOUT)
 	}
 
-	static async new<
+	async poll() {
+		const ts = new Date().getTime()
+
+		if (this.lastPollTs + this.pollingTimeout > ts) {
+			return
+		}
+
+		await this.fetch()
+	}
+
+	static async newWithWebsockets<
 		D extends AccountData,
 		P extends AccountDataParser<D>,
 		M extends ParsedAccountData<P>,
 	>(accounts: M) {
 		const fetcher = new AccountFetcher(accounts)
 		await fetcher.fetch()
-		fetcher.listen()
+		fetcher.listenWithWebsockets()
+		return fetcher
+	}
+
+	static async newWithPolling<
+		D extends AccountData,
+		P extends AccountDataParser<D>,
+		M extends ParsedAccountData<P>,
+	>(accounts: M, pollingTimeout: number) {
+		const fetcher = new AccountFetcher(accounts, pollingTimeout)
+		await fetcher.fetch()
 		return fetcher
 	}
 }

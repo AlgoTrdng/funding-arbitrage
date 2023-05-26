@@ -2,6 +2,7 @@ import { setTimeout } from 'node:timers/promises'
 import { PublicKey } from '@solana/web3.js'
 import { DRIFT_PROGRAM_ID, PerpMarketAccount } from '@drift-labs/sdk'
 import { Program } from '@coral-xyz/anchor'
+import { lt } from 'drizzle-orm'
 import BN from 'bn.js'
 import {
 	BookSide,
@@ -11,7 +12,7 @@ import {
 	mangoOracleLayout,
 	perpMarketLayout,
 } from 'mango-utils'
-import { Dex, saveFundingRecord } from 'db'
+import { Dex, fundingRecord, saveFundingRecord } from 'db'
 
 import { AccountFetcher, layoutAccountParser } from './utils/account-fetcher.js'
 import { DriftIDL, driftIDL } from './drift/idl.js'
@@ -47,28 +48,31 @@ function parsePerpMarketAccount(data: Buffer | null | undefined): PerpMarketAcco
 	}
 }
 
-const accounts = await AccountFetcher.new({
-	mangoPerpMarket: {
-		address: MANGO_PERP_MARKET_ADDRESS,
-		parser: layoutAccountParser(perpMarketLayout),
+const accounts = await AccountFetcher.newWithPolling(
+	{
+		mangoPerpMarket: {
+			address: MANGO_PERP_MARKET_ADDRESS,
+			parser: layoutAccountParser(perpMarketLayout),
+		},
+		mangoBids: {
+			address: MANGO_BIDS_ADDRESS,
+			parser: layoutAccountParser(bookSideLayout),
+		},
+		mangoAsks: {
+			address: MANGO_ASKS_ADDRESS,
+			parser: layoutAccountParser(bookSideLayout),
+		},
+		mangoOracle: {
+			address: MANGO_ORACLE_ADDRESS,
+			parser: layoutAccountParser(mangoOracleLayout),
+		},
+		driftPerpMarket: {
+			address: DRIFT_PERP_MARKET_ADDRESS,
+			parser: parsePerpMarketAccount,
+		},
 	},
-	mangoBids: {
-		address: MANGO_BIDS_ADDRESS,
-		parser: layoutAccountParser(bookSideLayout),
-	},
-	mangoAsks: {
-		address: MANGO_ASKS_ADDRESS,
-		parser: layoutAccountParser(bookSideLayout),
-	},
-	mangoOracle: {
-		address: MANGO_ORACLE_ADDRESS,
-		parser: layoutAccountParser(mangoOracleLayout),
-	},
-	driftPerpMarket: {
-		address: DRIFT_PERP_MARKET_ADDRESS,
-		parser: parsePerpMarketAccount,
-	},
-})
+	3000,
+)
 
 function getMangoFundingRateAPR(
 	perpMarket: PerpMarket,
@@ -100,6 +104,7 @@ async function trackFundingRate(fundingAPRGetter: () => number, dex: Dex) {
 
 	while (true) {
 		try {
+			await accounts.poll()
 			const fundingAPR = fundingAPRGetter()
 
 			oneMinuteSnapshots.push(fundingAPR)
@@ -140,6 +145,19 @@ async function trackFundingRate(fundingAPRGetter: () => number, dex: Dex) {
 	}
 }
 
+async function deleteOldFundingRecords() {
+	const ONE_HOUR = 1000 * 60 * 60
+
+	while (true) {
+		const ts = new Date().getTime() - ONE_HOUR
+		await db
+			.delete(fundingRecord)
+			.where(lt(fundingRecord.ts, new Date(ts)))
+			.execute()
+		await setTimeout(ONE_HOUR)
+	}
+}
+
 await Promise.all([
 	trackFundingRate(() => {
 		const mangoPerpMarket = new PerpMarket(
@@ -156,4 +174,5 @@ await Promise.all([
 	trackFundingRate(() => {
 		return getDriftFundingRateAPR(accounts.data.driftPerpMarket)
 	}, 'drift'),
+	deleteOldFundingRecords(),
 ])

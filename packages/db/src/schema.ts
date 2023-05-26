@@ -10,7 +10,7 @@ export const periodicity = mysqlEnum('periodicity', periodicityTypes)
 export const fundingRecord = mysqlTable('funding_record', {
 	id: int('id').autoincrement().primaryKey(),
 	ts: timestamp('ts').notNull(),
-	value: float('value'),
+	value: float('value').notNull(),
 	periodicity: periodicity.notNull(),
 	dex: dex.notNull(),
 })

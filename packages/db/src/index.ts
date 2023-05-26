@@ -2,11 +2,11 @@ import { PlanetScaleDatabase, drizzle } from 'drizzle-orm/planetscale-serverless
 import { connect } from '@planetscale/database'
 import dotenv from 'dotenv'
 
-import { Dex, Periodicity, fundingRecord } from './schema.js'
-
-export * from './schema.js'
+import { Dex, Periodicity, FundingRecord, fundingRecord, dex, periodicity } from './schema.js'
 
 dotenv.config()
+
+export { fundingRecord, dex, periodicity, Dex, Periodicity, FundingRecord }
 
 export function initDB(dbURL: string) {
 	const dbConnection = connect({
