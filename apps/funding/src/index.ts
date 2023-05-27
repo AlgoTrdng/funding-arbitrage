@@ -20,7 +20,6 @@ import { anchorProvider, db } from './global.js'
 
 const GET_FUNDING_PERIODICITY = 5000
 const SNAPSHOTS_IN_ONE_MINUTE = 12
-const SNAPSHOTS_IN_FIVE_MINUTES = 5
 
 const MANGO_PERP_MARKET_ADDRESS = new PublicKey('ESdnpnNLgTkBCZRuTJkZLi5wKEZ2z47SG3PJrhundSQ2')
 const MANGO_BIDS_ADDRESS = new PublicKey('4M8szuGnXvsnDuoJ2cN1bsE7Civ8d4DH7CSe8dRJXtnW')
@@ -99,9 +98,6 @@ async function trackFundingRate(fundingAPRGetter: () => number, dex: Dex) {
 	let oneMinuteSnapshots: number[] = []
 	let oneMinuteSnapshotsUnsaved = 0
 
-	let fiveMinuteSnapshots: number[] = []
-	let fiveMinuteSnapshotsUnsaved = 0
-
 	while (true) {
 		try {
 			await accounts.poll()
@@ -118,23 +114,8 @@ async function trackFundingRate(fundingAPRGetter: () => number, dex: Dex) {
 					dex,
 				})
 
-				fiveMinuteSnapshots.push(avg)
-				fiveMinuteSnapshotsUnsaved += 1
-
 				oneMinuteSnapshots = oneMinuteSnapshots.slice(1)
 				oneMinuteSnapshotsUnsaved = 0
-			}
-
-			if (fiveMinuteSnapshotsUnsaved === SNAPSHOTS_IN_FIVE_MINUTES) {
-				const avg = getAvg(fiveMinuteSnapshots)
-				await saveFundingRecord(db, {
-					periodicity: '5',
-					valuePct: avg,
-					dex,
-				})
-
-				fiveMinuteSnapshots = fiveMinuteSnapshots.slice(1)
-				fiveMinuteSnapshotsUnsaved = 0
 			}
 		} catch (error) {
 			console.error(error)

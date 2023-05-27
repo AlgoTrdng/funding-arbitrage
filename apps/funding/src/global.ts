@@ -5,7 +5,7 @@ import { config } from './config.js'
 import { initDB } from 'db'
 
 export const connection = new Connection(config.RPC_URL)
-export const wallet = Keypair.fromSecretKey(new Uint8Array(config.PRIVATE_KEY))
+export const wallet = new Keypair()
 export const anchorProvider = new AnchorProvider(connection, new Wallet(wallet), {
 	commitment: 'confirmed',
 })

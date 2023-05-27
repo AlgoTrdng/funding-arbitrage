@@ -1,7 +1,7 @@
 module.exports = {
 	apps: [
 		{
-			name: 'meteora-autocompounder',
+			name: 'funding-arb__indexer',
 			script: 'dist/index.js',
 			error_file: './logfiles/err.log',
 			out_file: './logfiles/out.log',
