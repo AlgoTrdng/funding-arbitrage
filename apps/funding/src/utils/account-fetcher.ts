@@ -37,8 +37,8 @@ export class AccountFetcher<
 
 	async fetch() {
 		try {
-			const ais = await connection.getMultipleAccountsInfo(this.addresses)
 			this.lastPollTs = new Date().getTime()
+			const ais = await connection.getMultipleAccountsInfo(this.addresses)
 
 			ais.forEach((ai, i) => {
 				if (!ai || !ai.data) {
