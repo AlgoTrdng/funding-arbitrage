@@ -6,10 +6,6 @@ dotenv.config()
 const configSchema = z.object({
 	DB_URL: z.string().min(1),
 	RPC_URL: z.string().min(1),
-	// PRIVATE_KEY: z
-	// 	.string()
-	// 	.min(1)
-	// 	.transform((pk) => pk.split(',').map(Number)),
 })
 
 const configRes = configSchema.safeParse(process.env)

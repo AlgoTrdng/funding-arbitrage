@@ -109,7 +109,6 @@ async function trackFundingRate(fundingAPRGetter: () => number, dex: Dex) {
 			if (oneMinuteSnapshotsUnsaved === SNAPSHOTS_IN_ONE_MINUTE) {
 				const avg = getAvg(oneMinuteSnapshots)
 				await saveFundingRecord(db, {
-					periodicity: '1',
 					valuePct: avg,
 					dex,
 				})
