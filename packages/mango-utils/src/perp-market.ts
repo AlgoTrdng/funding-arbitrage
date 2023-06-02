@@ -2,7 +2,6 @@ import { BN } from 'bn.js'
 import Big from 'big.js'
 import { TextDecoder } from 'util'
 import { PublicKey } from '@solana/web3.js'
-import { parsePriceData } from '@pythnetwork/client'
 
 import {
 	InnerNodeLayout,
@@ -22,19 +21,6 @@ function toNative(uiAmount: number, decimals: number): bigint {
 	return BigInt((uiAmount * Math.pow(10, decimals)).toFixed(0))
 }
 
-function toNativeI80F48(uiAmount: number, decimals: number) {
-	return I80F48.fromNumber(uiAmount * Math.pow(10, decimals))
-}
-
-function parsePythOracle(data: Buffer, baseDecimals: number) {
-	const priceData = parsePriceData(data)
-	const uiPrice = priceData.previousPrice
-	return {
-		uiPrice,
-		price: toNativeI80F48(uiPrice, QUOTE_DECIMALS - baseDecimals),
-	}
-}
-
 export class PerpMarket {
 	public name: string
 	public minFunding: I80F48
@@ -42,21 +28,19 @@ export class PerpMarket {
 	public baseLotSize: bigint
 	public quoteLotSize: bigint
 	public baseDecimals: number
-	public price: I80F48
-	public uiPrice: number
 	public impactQuantity: bigint
 
 	public priceLotsToUiConverter: number
 	public baseLotsToUiConverter: number
 
-	constructor(decoded: PerpMarketLayout, oracleData: Buffer) {
-		this.name = new TextDecoder('utf-8').decode(new Uint8Array(decoded.name)).split('\x00')[0]
-		this.baseDecimals = decoded.baseDecimals
-		this.baseLotSize = decoded.baseLotSize
-		this.quoteLotSize = decoded.quoteLotSize
-		this.minFunding = I80F48.from(decoded.minFunding)
-		this.maxFunding = I80F48.from(decoded.maxFunding)
-		this.impactQuantity = decoded.impactQuantity
+	constructor(public data: PerpMarketLayout, public price: I80F48, public uiPrice: number) {
+		this.name = new TextDecoder('utf-8').decode(new Uint8Array(data.name)).split('\x00')[0]
+		this.baseDecimals = data.baseDecimals
+		this.baseLotSize = data.baseLotSize
+		this.quoteLotSize = data.quoteLotSize
+		this.minFunding = data.minFunding
+		this.maxFunding = data.maxFunding
+		this.impactQuantity = data.impactQuantity
 
 		this.priceLotsToUiConverter = new Big(10)
 			.pow(this.baseDecimals - QUOTE_DECIMALS)
@@ -66,10 +50,6 @@ export class PerpMarket {
 		this.baseLotsToUiConverter = new Big(this.baseLotSize.toString())
 			.div(new Big(10).pow(this.baseDecimals))
 			.toNumber()
-
-		const { uiPrice, price } = parsePythOracle(oracleData, this.baseDecimals)
-		this.price = price
-		this.uiPrice = uiPrice
 	}
 
 	public getInstantaneousFundingRate(bids: BookSide, asks: BookSide): number {
@@ -102,6 +82,10 @@ export class PerpMarket {
 			(toNative(price, QUOTE_DECIMALS) * this.baseLotSize) /
 			(this.quoteLotSize * BigInt(Math.pow(10, this.baseDecimals)))
 		)
+	}
+
+	public uiBaseToLots(quantity: number): bigint {
+		return toNative(quantity, this.baseDecimals) / this.baseLotSize
 	}
 
 	public priceLotsToUi(price: bigint): number {

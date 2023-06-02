@@ -10,13 +10,14 @@ import {
 	PerpMarket,
 	bookSideLayout,
 	mangoOracleLayout,
+	parseOracle,
 	perpMarketLayout,
 } from 'mango-utils'
 import { Dex, fundingRecord, saveFundingRecord } from 'db'
 
-import { AccountFetcher, layoutAccountParser } from './utils/account-fetcher.js'
 import { DriftIDL, driftIDL } from './drift/idl.js'
 import { anchorProvider, db } from './global.js'
+import { AccountFetcher, layoutAccountParser } from './utils/account-fetcher.js'
 
 const GET_FUNDING_PERIODICITY = 5000
 const SNAPSHOTS_IN_ONE_MINUTE = 12
@@ -140,9 +141,15 @@ async function deleteOldFundingRecords() {
 
 await Promise.all([
 	trackFundingRate(() => {
+		const mangoOracleData = parseOracle(
+			accounts.accountsInfos.mangoOracle,
+			accounts.accountsInfos.mangoOracle.data,
+			accounts.data.mangoPerpMarket.baseDecimals,
+		)
 		const mangoPerpMarket = new PerpMarket(
 			accounts.data.mangoPerpMarket,
-			accounts.accountsInfos.mangoOracle,
+			mangoOracleData.price,
+			mangoOracleData.uiPrice,
 		)
 		const mangoFundingAPR = getMangoFundingRateAPR(
 			mangoPerpMarket,

@@ -3,33 +3,32 @@ import { u64, publicKey, u128, bigInt } from '@solana/buffer-layout-utils'
 import { PublicKey } from '@solana/web3.js'
 import BN from 'bn.js'
 
-export class BNLayout extends Layout<BN> {
-	blob: Blob
-	signed: boolean
+import { I80F48 } from './i80f48.js'
 
-	constructor(span: number, signed: boolean, property?: string) {
+export class _I80F48Layout extends Layout<I80F48> {
+	blob: Blob
+
+	constructor(property?: string) {
+		const span = 16
 		super(span, property)
+
 		this.blob = blob(span)
-		this.signed = signed
 	}
 
 	decode(b: Buffer, offset = 0) {
 		const num = new BN(this.blob.decode(b, offset), 10, 'le')
-		if (this.signed) {
-			return num.fromTwos(this.span * 8).clone()
-		}
-		return num
+		const snum = num.fromTwos(128).clone()
+		return I80F48.from({ val: snum })
 	}
 
-	encode(src: BN, b: Buffer, offset = 0) {
-		if (this.signed) {
-			src = src.toTwos(this.span * 8)
-		}
-		return this.blob.encode(src.toArrayLike(Buffer, 'le', this.span), b, offset)
+	encode(src: I80F48, b: Buffer, offset = 0) {
+		const bn = src.data.toTwos(128)
+		return this.blob.encode(bn.toArrayLike(Buffer, 'le', this.span), b, offset)
 	}
 }
 
-const s64 = bigInt(8)
+export const s64 = bigInt(8)
+export const s128 = bigInt(16)
 
 type TokenIndexLayout = {
 	val: number
@@ -37,20 +36,16 @@ type TokenIndexLayout = {
 
 const tokenIndexLayout = struct<TokenIndexLayout>([u16('val')])
 
-export type I80F48Layout = {
-	val: BN
-}
-
-export const i80f48Layout = struct<I80F48Layout>([new BNLayout(16, true, 'val')])
+export const i80f48Layout = (prop?: string) => new _I80F48Layout(prop)
 
 export type OracleConfigLayout = {
-	confFilter: I80F48Layout
+	confFilter: I80F48
 	maxStalenessSlots: bigint
 	reserved: number[]
 }
 
 export const oracleConfigLayout = struct<OracleConfigLayout>([
-	i80f48Layout.replicate('confFilter'),
+	i80f48Layout('confFilter'),
 	s64('maxStalenessSlots'),
 	seq(u8(), 72, 'reserved'),
 ])
@@ -101,24 +96,24 @@ export type PerpMarketLayout = {
 	stablePriceModel: StablePriceModelLayout
 	quoteLotSize: bigint
 	baseLotSize: bigint
-	maintBaseAssetWeight: I80F48Layout
-	initBaseAssetWeight: I80F48Layout
-	maintBaseLiabWeight: I80F48Layout
-	initBaseLiabWeight: I80F48Layout
+	maintBaseAssetWeight: I80F48
+	initBaseAssetWeight: I80F48
+	maintBaseLiabWeight: I80F48
+	initBaseLiabWeight: I80F48
 	openInterest: bigint
 	seqNum: bigint
 	registrationTime: bigint
-	minFunding: I80F48Layout
-	maxFunding: I80F48Layout
+	minFunding: I80F48
+	maxFunding: I80F48
 	impactQuantity: bigint
-	longFunding: I80F48Layout
-	shortFunding: I80F48Layout
+	longFunding: I80F48
+	shortFunding: I80F48
 	fundingLastUpdated: bigint
-	baseLiquidationFee: I80F48Layout
-	makerFee: I80F48Layout
-	takerFee: I80F48Layout
-	feesAccrued: I80F48Layout
-	feesSettled: I80F48Layout
+	baseLiquidationFee: I80F48
+	makerFee: I80F48
+	takerFee: I80F48
+	feesAccrued: I80F48
+	feesSettled: I80F48
 	feePenalty: number
 	settleFeeFlat: number
 	settleFeeAmountThreshold: number
@@ -129,9 +124,9 @@ export type PerpMarketLayout = {
 	reduceOnly: number
 	forceClose: number
 	padding4: number[]
-	maintOverallAssetWeight: I80F48Layout
-	initOverallAssetWeight: I80F48Layout
-	positivePnlLiquidationFee: I80F48Layout
+	maintOverallAssetWeight: I80F48
+	initOverallAssetWeight: I80F48
+	positivePnlLiquidationFee: I80F48
 	reserved: number[]
 }
 
@@ -153,24 +148,24 @@ export const perpMarketLayout = struct<PerpMarketLayout>([
 	stablePriceModelLayout.replicate('stablePriceModel'),
 	s64('quoteLotSize'),
 	s64('baseLotSize'),
-	i80f48Layout.replicate('maintBaseAssetWeight'),
-	i80f48Layout.replicate('initBaseAssetWeight'),
-	i80f48Layout.replicate('maintBaseLiabWeight'),
-	i80f48Layout.replicate('initBaseLiabWeight'),
+	i80f48Layout('maintBaseAssetWeight'),
+	i80f48Layout('initBaseAssetWeight'),
+	i80f48Layout('maintBaseLiabWeight'),
+	i80f48Layout('initBaseLiabWeight'),
 	s64('openInterest'),
 	u64('seqNum'),
 	u64('registrationTime'),
-	i80f48Layout.replicate('minFunding'),
-	i80f48Layout.replicate('maxFunding'),
+	i80f48Layout('minFunding'),
+	i80f48Layout('maxFunding'),
 	s64('impactQuantity'),
-	i80f48Layout.replicate('longFunding'),
-	i80f48Layout.replicate('shortFunding'),
+	i80f48Layout('longFunding'),
+	i80f48Layout('shortFunding'),
 	u64('fundingLastUpdated'),
-	i80f48Layout.replicate('baseLiquidationFee'),
-	i80f48Layout.replicate('makerFee'),
-	i80f48Layout.replicate('takerFee'),
-	i80f48Layout.replicate('feesAccrued'),
-	i80f48Layout.replicate('feesSettled'),
+	i80f48Layout('baseLiquidationFee'),
+	i80f48Layout('makerFee'),
+	i80f48Layout('takerFee'),
+	i80f48Layout('feesAccrued'),
+	i80f48Layout('feesSettled'),
 	f32('feePenalty'),
 	f32('settleFeeFlat'),
 	f32('settleFeeAmountThreshold'),
@@ -181,9 +176,9 @@ export const perpMarketLayout = struct<PerpMarketLayout>([
 	u8('reduceOnly'),
 	u8('forceClose'),
 	seq(u8(), 6, 'padding4'),
-	i80f48Layout.replicate('maintOverallAssetWeight'),
-	i80f48Layout.replicate('initOverallAssetWeight'),
-	i80f48Layout.replicate('positivePnlLiquidationFee'),
+	i80f48Layout('maintOverallAssetWeight'),
+	i80f48Layout('initOverallAssetWeight'),
+	i80f48Layout('positivePnlLiquidationFee'),
 	seq(u8(), 1888, 'reserved'),
 ])
 
@@ -292,14 +287,14 @@ export const leafNodeLayout = struct<LeafNodeLayout>([
 export type MangoOracleLayout = {
 	group: PublicKey
 	mint: PublicKey
-	price: I80F48Layout
+	price: I80F48
 	lastUpdated: bigint
 }
 
 export const mangoOracleLayout = struct<MangoOracleLayout>([
 	publicKey('group'),
 	publicKey('mint'),
-	i80f48Layout.replicate('price'),
+	i80f48Layout('price'),
 	s64('lastUpdated'),
 ])
 
@@ -311,28 +306,28 @@ export type MangoBankLayout = {
 	oracle: PublicKey
 	oracleConfig: OracleConfigLayout
 	stablePriceModel: StablePriceModelLayout
-	depositIndex: I80F48Layout
-	borrowIndex: I80F48Layout
-	indexedDeposits: I80F48Layout
-	indexedBorrows: I80F48Layout
+	depositIndex: I80F48
+	borrowIndex: I80F48
+	indexedDeposits: I80F48
+	indexedBorrows: I80F48
 	indexLastUpdated: bigint
 	bankRateLastUpdated: bigint
-	avgUtilization: I80F48Layout
-	adjustmentFactor: I80F48Layout
-	util0: I80F48Layout
-	rate0: I80F48Layout
-	util1: I80F48Layout
-	rate1: I80F48Layout
-	maxRate: I80F48Layout
-	collectedFeesNative: I80F48Layout
-	loanOriginationFeeRate: I80F48Layout
-	loanFeeRate: I80F48Layout
-	maintAssetWeight: I80F48Layout
-	initAssetWeight: I80F48Layout
-	maintLiabWeight: I80F48Layout
-	initLiabWeight: I80F48Layout
-	liquidationFee: I80F48Layout
-	dust: I80F48Layout
+	avgUtilization: I80F48
+	adjustmentFactor: I80F48
+	util0: I80F48
+	rate0: I80F48
+	util1: I80F48
+	rate1: I80F48
+	maxRate: I80F48
+	collectedFeesNative: I80F48
+	loanOriginationFeeRate: I80F48
+	loanFeeRate: I80F48
+	maintAssetWeight: I80F48
+	initAssetWeight: I80F48
+	maintLiabWeight: I80F48
+	initLiabWeight: I80F48
+	liquidationFee: I80F48
+	dust: I80F48
 	flashLoanTokenAccountInitial: bigint
 	flashLoanApprovedAmount: bigint
 	tokenIndex: number
@@ -352,35 +347,35 @@ export type MangoBankLayout = {
 }
 
 export const mangoBankLayout = struct<MangoBankLayout>([
-	publicKey('group'),
-	seq(u8(), 16, 'name'),
-	publicKey('mint'),
-	publicKey('vault'),
-	publicKey('oracle'),
+	publicKey('group'), // 32
+	seq(u8(), 16, 'name'), // 16
+	publicKey('mint'), // 32
+	publicKey('vault'), // 32
+	publicKey('oracle'), // 32
 	oracleConfigLayout.replicate('oracleConfig'),
-	i80f48Layout.replicate('depositIndex'),
+	i80f48Layout('depositIndex'),
 	stablePriceModelLayout.replicate('stablePriceModel'),
-	i80f48Layout.replicate('borrowIndex'),
-	i80f48Layout.replicate('indexedDeposits'),
-	i80f48Layout.replicate('indexedBorrows'),
+	i80f48Layout('borrowIndex'),
+	i80f48Layout('indexedDeposits'),
+	i80f48Layout('indexedBorrows'),
 	u64('indexLastUpdated'),
-	i80f48Layout.replicate('avgUtilization'),
+	i80f48Layout('avgUtilization'),
 	u64('bankRateLastUpdated'),
-	i80f48Layout.replicate('adjustmentFactor'),
-	i80f48Layout.replicate('util0'),
-	i80f48Layout.replicate('rate0'),
-	i80f48Layout.replicate('util1'),
-	i80f48Layout.replicate('rate1'),
-	i80f48Layout.replicate('maxRate'),
-	i80f48Layout.replicate('collectedFeesNative'),
-	i80f48Layout.replicate('loanOriginationFeeRate'),
-	i80f48Layout.replicate('loanFeeRate'),
-	i80f48Layout.replicate('maintAssetWeight'),
-	i80f48Layout.replicate('initAssetWeight'),
-	i80f48Layout.replicate('maintLiabWeight'),
-	i80f48Layout.replicate('initLiabWeight'),
-	i80f48Layout.replicate('liquidationFee'),
-	i80f48Layout.replicate('dust'),
+	i80f48Layout('adjustmentFactor'),
+	i80f48Layout('util0'),
+	i80f48Layout('rate0'),
+	i80f48Layout('util1'),
+	i80f48Layout('rate1'),
+	i80f48Layout('maxRate'),
+	i80f48Layout('collectedFeesNative'),
+	i80f48Layout('loanOriginationFeeRate'),
+	i80f48Layout('loanFeeRate'),
+	i80f48Layout('maintAssetWeight'),
+	i80f48Layout('initAssetWeight'),
+	i80f48Layout('maintLiabWeight'),
+	i80f48Layout('initLiabWeight'),
+	i80f48Layout('liquidationFee'),
+	i80f48Layout('dust'),
 	u64('flashLoanTokenAccountInitial'),
 	u64('flashLoanApprovedAmount'),
 	u16('tokenIndex'),

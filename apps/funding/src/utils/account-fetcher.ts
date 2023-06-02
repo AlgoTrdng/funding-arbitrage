@@ -1,4 +1,4 @@
-import { PublicKey } from '@solana/web3.js'
+import { AccountInfo, PublicKey } from '@solana/web3.js'
 import { Structure } from '@solana/buffer-layout'
 
 import { connection } from '../global.js'
@@ -23,7 +23,7 @@ export class AccountFetcher<
 	public data: { [K in keyof M]: ReturnType<M[K]['parser']> } = {}
 	// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 	// @ts-ignore
-	public accountsInfos: { [K in keyof M]: Buffer } = {}
+	public accountsInfos: { [K in keyof M]: AccountInfo<Buffer> } = {}
 
 	private lastPollTs = 0
 
@@ -51,7 +51,7 @@ export class AccountFetcher<
 				// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 				// @ts-ignore
 				this.data[key] = parser(ai?.data)
-				this.accountsInfos[key] = ai.data
+				this.accountsInfos[key] = ai
 			})
 		} catch (e) {
 			console.error(e)
@@ -77,7 +77,7 @@ export class AccountFetcher<
 					// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 					// @ts-ignore
 					this.data[key] = parser(ai.data)
-					this.accountsInfos[key] = ai.data
+					this.accountsInfos[key] = ai
 				})
 				subIds[i] = subId
 			})
