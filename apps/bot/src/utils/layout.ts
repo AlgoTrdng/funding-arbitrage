@@ -1,63 +1,43 @@
 import { Idl, Program } from '@coral-xyz/anchor'
 import { Layout, Union, struct, u8, union } from '@solana/buffer-layout'
 
-// class _I80F48Layout extends Layout<I80F48> {
-// 	private _layout: Structure<I80F48Layout>
+class OptionLayout<T> extends Layout<T | null> {
+	private disc = u8()
 
-// 	constructor(prop?: string) {
-// 		super(i80f48Layout.span, prop)
-// 		this._layout = i80f48Layout
-// 	}
+	constructor(private layout: Layout<T>, property?: string) {
+		super(-1, property)
+	}
 
-// 	decode(b: Uint8Array, offset?: number | undefined): I80F48 {
-// 		const decoded = this._layout.decode(b, offset)
-// 		return I80F48.from(decoded)
-// 	}
+	encode(src: T | null, b: Uint8Array, offset = 0): number {
+		if (src === null || src === undefined) {
+			return this.disc.encode(0, b, offset)
+		}
+		this.disc.encode(1, b, offset)
+		return this.layout.encode(src, b, offset + 1) + 1
+	}
 
-// 	encode(src: I80F48, b: Uint8Array, offset?: number | undefined) {
-// 		return this._layout.encode(
-// 			{
-// 				val: src.data,
-// 			},
-// 			b,
-// 			offset,
-// 		)
-// 	}
-// }
+	decode(b: Uint8Array, offset = 0): T | null {
+		const disc = this.decode(b, offset)
+		if (disc === 0) {
+			return null
+		} else if (disc === 1) {
+			return this.layout.decode(b, offset + 1)
+		}
+		throw Error('Invalid option: ' + this.property)
+	}
 
-// type VectorStruct<V> = {
-// 	length: number
-// 	values: V[]
-// }
+	getSpan(b: Uint8Array, offset = 0): number {
+		const disc = this.disc.decode(b, offset)
+		if (disc === 0) {
+			return 1
+		} else if (disc === 1) {
+			return this.layout.getSpan(b, offset + 1) + 1
+		}
+		throw Error('Invalid option: ' + this.property)
+	}
+}
 
-// class VectorLayout<V> extends Layout<unknown> {
-// 	private _layout: Structure<VectorStruct<V>>
-
-// 	constructor(elLayout: Layout<V>, property?: string) {
-// 		const l = u32('length')
-// 		const length = offset(l, -l.span)
-// 		const values = seq(elLayout, length, 'values')
-// 		const layout = struct<VectorStruct<V>>([l, values])
-
-// 		super(layout.span, property)
-// 		this._layout = layout
-// 	}
-
-// 	decode(b: Uint8Array, offset?: number | undefined): V[] {
-// 		return this._layout.decode(b, offset).values
-// 	}
-
-// 	encode(src: V[], b: Uint8Array, offset?: number | undefined) {
-// 		return this._layout.encode(
-// 			{
-// 				length: src.length,
-// 				values: src,
-// 			},
-// 			b,
-// 			offset,
-// 		)
-// 	}
-// }
+export const optionLayout = <T>(layout: Layout<T>, prop?: string) => new OptionLayout(layout, prop)
 
 class EnumLayout<T extends string> extends Layout<unknown> {
 	private _layout: Union
@@ -107,6 +87,7 @@ export function parseAccountWithAnchor<D, T extends Idl = Idl>(
 	try {
 		return program.coder.accounts.decode(accountName, data) as D
 	} catch (e) {
+		console.log(e)
 		console.log(`Could not decode account: ${accountName}`)
 		return null
 	}

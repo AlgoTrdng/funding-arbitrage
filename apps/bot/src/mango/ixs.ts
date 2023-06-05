@@ -37,10 +37,7 @@ import {
 	openbookQuoteVaultAddress,
 	openbookSizeUiToLots,
 } from './common.js'
-
-function accountMeta(pk: PublicKey, isWritable?: boolean, isSigner?: boolean): AccountMeta {
-	return { pubkey: pk, isSigner: Boolean(isSigner), isWritable: Boolean(isWritable) }
-}
+import { accountMeta } from '../utils/account-meta.js'
 
 const I64_MAX = BigInt('9223372036854775807')
 const U64_MAX = BigInt('18446744073709551615')

@@ -3,7 +3,7 @@ import { desc, gt } from 'drizzle-orm'
 
 import { db } from './global.js'
 
-type ParsedFundingRecord = Omit<FundingRecord, 'dex' | 'id' | 'periodicity'>
+type ParsedFundingRecord = Omit<FundingRecord, 'dex' | 'id'>
 
 export type ParsedFundingRates = {
 	mango: ParsedFundingRecord[]
